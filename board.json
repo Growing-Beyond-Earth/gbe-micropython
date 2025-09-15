@@ -1,0 +1,28 @@
+{
+    "model": "Raspberry Pi Pico W",
+    "default_year": 2021,
+    "pins": {
+        "red": 0,
+        "green": 1,
+        "blue": 2,
+        "white": 3,
+        "fan": 4,
+        "rpm": 5,
+        "neopixel": 6,
+        "aux": 7,
+        "spi1_sck": 14,
+        "spi1_mosi": 15,
+        "spi1_miso": 12,
+        "spi1_cs_connector": 13,
+        "i2c0_sda": 20,
+        "i2c0_scl": 21,
+        "i2c1_sda": 26,
+        "i2c1_scl": 27,
+        "spi0_sck": 18,
+        "spi0_mosi": 19,
+        "spi0_miso": 16,
+        "spi0_cs_sdcard": 17,
+        "sdcard_cd": 22,
+        "led": "LED"
+    }
+}

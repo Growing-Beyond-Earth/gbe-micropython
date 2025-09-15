@@ -1,0 +1,42 @@
+{
+  "settings": {
+    "default_actions": [
+      {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "white": 0,
+            "fan": 96
+      }
+    ],
+    "loops": [
+      {
+        "type": "time",
+        "start": "07:00",
+        "end": "19:00",
+        "actions": [
+          {
+            "red": 10,
+            "green": 0,
+            "blue": 30,
+            "white": 115
+          }
+        ]
+      },
+      {
+        "type": "sensor",
+        "condition": {
+          "sensor": "humidity",
+          "comparison": "<",
+          "value": 60
+        },
+        "actions": [
+          {
+            "fan": 0
+          }
+        ]
+      }
+    ]
+  }
+}
+
