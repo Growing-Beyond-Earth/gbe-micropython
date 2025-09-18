@@ -133,7 +133,7 @@ class SensorManager:
                 self._sensors['scd'].set_ambient_pressure(round(self._sensors['mpl'].pressure() / 100))
             self._sensors['scd'].start_periodic_measurement()
     
-    def reinitialize_scd4x_if_needed(self):
+    async def reinitialize_scd4x_if_needed(self):
         """Reinitialize the SCD4x sensor if it's not responding."""
         scd = self._sensors.get('scd')
         if not scd:
@@ -150,7 +150,7 @@ class SensorManager:
         try:
             print("SCD4x sensor not responding, reinitializing...")
             scd.reinit()
-            time.sleep(2)
+            await asyncio.sleep(2)
             scd.temperature_offset = 0
             
             # Set ambient pressure if MPL sensor is available

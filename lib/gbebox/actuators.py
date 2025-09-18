@@ -6,6 +6,7 @@ Addresses static/instance method inconsistencies from original design.
 """
 
 import time
+import uasyncio as asyncio
 from machine import Pin, PWM
 from .hardware import board
 
@@ -103,7 +104,7 @@ class LightController:
         """Turn all lights off."""
         self.rgbw(0, 0, 0, 0)
     
-    def set_rgbw_with_power_target(self, r, g, b, w, target_watts, tolerance=0.5, max_iterations=5):
+    async def set_rgbw_with_power_target(self, r, g, b, w, target_watts, tolerance=0.5, max_iterations=5):
         """
         Set RGBW channels to achieve a target power consumption.
         
@@ -188,7 +189,7 @@ class LightController:
         self.rgbw(current_r, current_g, current_b, current_w)
         
         # Wait for initial stabilization
-        time.sleep(3.0)
+        await asyncio.sleep(3.0)
         
         for iteration in range(max_iterations):
             # Get actual power consumption with multiple attempts
@@ -200,9 +201,9 @@ class LightController:
                         actual_power = reading
                         break
                     else:
-                        time.sleep(0.5)  # Brief wait between attempts
+                        await asyncio.sleep(0.5)  # Brief wait between attempts
                 except Exception:
-                    time.sleep(0.5)
+                    await asyncio.sleep(0.5)
             
             if actual_power is None or actual_power <= 0:
                 return {
@@ -255,7 +256,7 @@ class LightController:
                 
                 # Apply new PWM values for next iteration
                 self.rgbw(current_r, current_g, current_b, current_w)
-                time.sleep(2.5)  # Wait for stabilization
+                await asyncio.sleep(2.5)  # Wait for stabilization
         
         # Maximum iterations reached
         return {

@@ -101,7 +101,7 @@ class ProgramEngine:
                 pass
             else:
                 # New target or failed previous attempt - run power adjustment
-                result = light.set_rgbw_with_power_target(r, g, b, w, target_watts)
+                result = await light.set_rgbw_with_power_target(r, g, b, w, target_watts)
                 
                 if not result['success']:
                     print(f"Power-based control failed: {result['error']}")
