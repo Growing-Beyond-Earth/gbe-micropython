@@ -93,9 +93,9 @@ Check the `examples/` folder for complete programs:
 
 ## Documentation
 
-- **`DICTIONARY.md`** - Complete function reference for students
-- **`PROGRAM_JSON_FORMAT.md`** - Program configuration file format
-- **`examples/README.md`** - Guide to example programs
+- **[`DICTIONARY.md`](DICTIONARY.md)** - Complete function reference for students
+- **[`PROGRAM_JSON_FORMAT.md`](PROGRAM_JSON_FORMAT.md)** - Program configuration file format
+- **[`examples/README.md`](examples/README.md)** - Guide to example programs
 - **MicroPython Docs** - https://docs.micropython.org/
 
 ## Educational Use
