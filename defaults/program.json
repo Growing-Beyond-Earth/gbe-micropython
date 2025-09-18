@@ -19,7 +19,8 @@
             "red": 10,
             "green": 0,
             "blue": 30,
-            "white": 115
+            "white": 115,
+            "target_watts": 25
           }
         ]
       },
