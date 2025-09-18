@@ -11,7 +11,7 @@ print("Press Ctrl+C to stop the program.")
 
 # Set your desired temperature range (in Celsius)
 TARGET_TEMP_MIN = 22.0  # Turn on warming lights below this temperature
-TARGET_TEMP_MAX = 26.0  # Turn on cooling fan above this temperature
+TARGET_TEMP_MAX = 30.0  # Turn on cooling fan above this temperature
 
 # Set your desired light schedule (24-hour format)
 LIGHTS_ON_HOUR = 8   # Turn lights on at 8 AM
@@ -38,7 +38,7 @@ async def monitor_temperature():
                 print(f"  Temperature too low! Increasing lights for warmth...")
                 gbebox.fan.off()
                 # Add some white light for warmth (but respect the light schedule)
-                current_hour = gbebox.clock.now()[3]  # Get current hour
+                current_hour = gbebox.clock.get_current_datetime()[3]  # Get current hour
                 if LIGHTS_ON_HOUR <= current_hour < LIGHTS_OFF_HOUR:
                     gbebox.light.white(100)  # Add warm white light
                 gbebox.indicator.on("blue")  # Blue light indicates heating mode
@@ -60,7 +60,7 @@ async def control_light_schedule():
     """This function controls the daily light schedule"""
     while True:
         # Get current time
-        current_time = gbebox.clock.now()
+        current_time = gbebox.clock.get_current_datetime()
         current_hour = current_time[3]  # Hour (0-23)
         current_minute = current_time[4]  # Minute (0-59)
         
@@ -118,7 +118,7 @@ async def log_data():
         all_sensors = gbebox.sensor.all
         
         # Print timestamp
-        current_time = gbebox.clock.now()
+        current_time = gbebox.clock.get_current_datetime()
         timestamp = f"{current_time[0]}-{current_time[1]:02d}-{current_time[2]:02d} {current_time[3]:02d}:{current_time[4]:02d}:{current_time[5]:02d}"
         print(f"Time: {timestamp}")
         

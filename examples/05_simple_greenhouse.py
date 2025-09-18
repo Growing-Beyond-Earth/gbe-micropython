@@ -15,7 +15,7 @@ print("First, let's set up your greenhouse preferences...")
 
 # For this example, we'll use simple preset values
 # In a more advanced program, students could input their own values
-DAYTIME_TEMP_MAX = 25.0    # Turn on fan if temperature goes above this
+DAYTIME_TEMP_MAX = 30.0    # Turn on fan if temperature goes above this
 NIGHTTIME_TEMP_MIN = 18.0  # Turn on heater light if temperature goes below this
 LIGHTS_ON_HOUR = 7         # Morning: turn lights on
 LIGHTS_OFF_HOUR = 19       # Evening: turn lights off
@@ -49,7 +49,7 @@ try:
         print(f"--- Control Cycle #{cycle_count} ---")
         
         # Get current time to determine if it's day or night
-        current_time = gbebox.clock.now()
+        current_time = gbebox.clock.get_current_datetime()
         current_hour = current_time[3]  # Extract hour (0-23)
         current_minute = current_time[4]  # Extract minute
         
@@ -78,11 +78,11 @@ try:
                 # Daytime: prevent overheating with fan
                 if temperature > DAYTIME_TEMP_MAX:
                     print(f"  → Too hot! Turning on cooling fan (>{DAYTIME_TEMP_MAX}°C)")
-                    gbebox.fan.on(speed=200)  # High speed for cooling
+                    gbebox.fan.on(speed=128)  # High speed for cooling
                     gbebox.indicator.on("red")  # Red = cooling mode
                 else:
                     print(f"  → Temperature OK, gentle air circulation")
-                    gbebox.fan.on(speed=80)   # Low speed for air movement
+                    gbebox.fan.on(speed=64)   # Low speed for air movement
                     gbebox.indicator.on("green")  # Green = all good
             else:
                 # Nighttime: prevent getting too cold

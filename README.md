@@ -89,10 +89,12 @@ Check the `examples/` folder for complete programs:
 - `03_climate_control.py` - Advanced automation
 - `04_data_logging.py` - Data collection
 - `05_simple_greenhouse.py` - Beginner automation
+- `06_thermal_monitoring.py` - Environmental temperature monitoring
 
 ## Documentation
 
-- **`dictionary.md`** - Complete function reference for students
+- **`DICTIONARY.md`** - Complete function reference for students
+- **`PROGRAM_JSON_FORMAT.md`** - Program configuration file format
 - **`examples/README.md`** - Guide to example programs
 - **MicroPython Docs** - https://docs.micropython.org/
 

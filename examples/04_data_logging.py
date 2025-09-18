@@ -23,7 +23,7 @@ if not gbebox.sd.is_mounted():
         exit()
 
 # Create filename with current date
-current_time = gbebox.clock.now()
+current_time = gbebox.clock.get_current_datetime()
 date_string = f"{current_time[0]}-{current_time[1]:02d}-{current_time[2]:02d}"
 filename = f"sensor_data_{date_string}.csv"
 
@@ -57,7 +57,7 @@ while True:  # Run forever until stopped
     print(f"\n--- Recording Data Entry #{log_count} ---")
     
     # Get current timestamp
-    current_time = gbebox.clock.now()
+    current_time = gbebox.clock.get_current_datetime()
     timestamp = f"{current_time[0]}-{current_time[1]:02d}-{current_time[2]:02d} {current_time[3]:02d}:{current_time[4]:02d}:{current_time[5]:02d}"
     
     # Read all sensors

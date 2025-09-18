@@ -177,22 +177,6 @@ print(f"Core temperature: {core_temp}°C")
 ```
 
 
-### Thermal Safety
-
-The GBE Box has built-in thermal protection that automatically shuts off the LED panel if the internal temperature gets too hot (above 65°C). This protects the hardware from damage.
-
-```micropython
-# Check thermal status
-from gbebox.actuators import light
-thermal_status = light.get_thermal_status()
-
-if thermal_status['thermal_shutdown_active']:
-    print("THERMAL PROTECTION ACTIVE - LEDs are shut off for safety")
-    print(f"Core temperature: {thermal_status['temperature']}°C")
-    print("LEDs will turn back on when temperature drops below 55°C")
-else:
-    print("Thermal status normal")
-```
 
 ### All Sensors at Once
 
@@ -369,8 +353,9 @@ print(f"MAC: {mac_address}")
 if gbebox.usb_connected():
     print("USB cable is connected")
 
-# Get software version
+# Get software and hardware versions
 print(f"Software date: {gbebox.software_date}")
+print(f"Hardware date: {gbebox.hardware_date}")
 ```
 
 ### Available Sensors
