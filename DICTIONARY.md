@@ -1,4 +1,4 @@
-# GBE Box MicroPython Programming Reference
+# GBE MicroPython Programming Reference
 
 This document provides a comprehensive reference for all commands and functions available when programming the GBE Box hardware using MicroPython. This guide is designed for middle and high school students learning to control environmental chambers and sensors.
 
