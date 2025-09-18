@@ -18,6 +18,7 @@ For more information, visit: https://www.fairchildgarden.org/gbe
 
 from micropython import const
 import ustruct
+import json
 from machine import I2C, Pin
 
 # Bits
@@ -94,13 +95,66 @@ def _to_signed(num: int) -> int:
 class INA219:
     """Driver for the INA219 current sensor"""
 
-    def __init__(self, i2c_bus: I2C, addr: int = 0x40) -> None:
+    def __init__(self, i2c_bus: I2C, addr: int = 0x40, rsh_value: float = None) -> None:
         self.i2c_bus = i2c_bus
         self.i2c_addr = addr
+        
+        # Determine correct RSH value: check cache first, then use provided value, then default
+        if rsh_value is None:
+            self.rsh_value = self._get_cached_rsh_value()
+        else:
+            self.rsh_value = rsh_value
+            
         self._cal_value = 0
         self._current_lsb = 0
         self._power_lsb = 0
         self.set_calibration_32V_2_5A()
+
+    def _get_cached_rsh_value(self):
+        """
+        Get RSH value from cached hardware version detection.
+        
+        Returns:
+            float: RSH value from cache, or default 0.0100 if cache not available
+        """
+        # RSH values by hardware version
+        rsh_by_version = {
+            "v1.5": 0.0100,
+            "v1.4": 0.0136,
+            "v1.0": 0.0109,
+        }
+        
+        # Try to load cache file
+        try:
+            with open('/cache/hardware_version.json', 'r') as f:
+                cache_data = json.load(f)
+        except OSError:
+            # File doesn't exist - this is normal on first boot
+            # print("INA219: No hardware cache found, using default RSH")
+            return 0.0100
+        except ValueError:
+            print("INA219: Cache file corrupted, using default RSH")
+            return 0.0100
+        
+        # Check if we successfully loaded cache data
+        if cache_data:
+            # Only use cache if detection was successful
+            detection_successful = cache_data.get('detection_successful', False)
+            
+            if detection_successful:
+                version = cache_data.get('version')
+                if version in rsh_by_version:
+                    rsh_value = rsh_by_version[version]
+                    # print(f"INA219: Using RSH={rsh_value} for {version}")
+                    return rsh_value
+                else:
+                    print(f"INA219: Unknown version '{version}' in cache, using default")
+            else:
+                print("INA219: Previous detection failed, using default RSH")
+            
+        # Default to v1.5 value if no valid cache
+        print("INA219: Using default RSH=0.0100")
+        return 0.0100
 
     def _write_register(self, register: int, value: int) -> None:
         data = ustruct.pack(">H", value)
@@ -127,8 +181,10 @@ class INA219:
         self._write_register(_REG_CALIBRATION, self._cal_value)
         raw_value = self._read_register(_REG_CURRENT)
         corrected_value = _to_signed(raw_value) * self._current_lsb
-        if corrected_value < 10: corrected_value = 0
-        return corrected_value
+        # Convert to mA and apply threshold  
+        corrected_value_ma = corrected_value * 1000
+        if corrected_value_ma < 10: corrected_value_ma = 0
+        return corrected_value_ma
 
     @property
     def power(self) -> float:
@@ -139,9 +195,26 @@ class INA219:
         return corrected_value
 
     def set_calibration_32V_2_5A(self) -> None:
-        self._current_lsb = 1.0  # Adjusted for accurate current reading
-        self._cal_value = 4096
-        self._power_lsb = 0.02  # Adjusted for accurate power reading
+        # Calculate calibration values based on actual shunt resistor value
+        # Formula: CAL = 0.04096 / (Current_LSB * R_shunt)
+        # We want Current_LSB to give us good resolution for expected current range
+        
+        # Calculate Current_LSB based on expected current range and RSH value
+        # For INA219, we want CAL to be in a reasonable range (avoid overflow)
+        # CAL = 0.04096 / (Current_LSB * R_shunt)
+        # Rearranging: Current_LSB = 0.04096 / (CAL * R_shunt)
+        # We want CAL around 20000-30000 for good resolution
+        
+        target_cal = 25000  # Good middle value
+        self._current_lsb = 0.04096 / (target_cal * self.rsh_value)
+        
+        # Now calculate actual CAL with this Current_LSB
+        cal_float = 0.04096 / (self._current_lsb * self.rsh_value)
+        self._cal_value = int(cal_float)
+        
+        # Power LSB is 20x Current LSB
+        self._power_lsb = 20 * self._current_lsb
+        
         self._write_register(_REG_CALIBRATION, self._cal_value)
         config = (BusVoltageRange.RANGE_32V << 13) | (Gain.DIV_8_320MV << 11) | \
                  (ADCResolution.ADCRES_12BIT_128S << 7) | (ADCResolution.ADCRES_12BIT_128S << 3) | Mode.SANDBVOLT_CONTINUOUS

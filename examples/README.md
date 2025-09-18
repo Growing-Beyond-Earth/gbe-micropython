@@ -36,13 +36,18 @@ This folder contains example MicroPython programs to help you learn how to use y
 **Good for:** First automation project, combining sensors with control  
 **Concepts:** Basic automation, conditional logic, time-based control
 
+### 06_thermal_monitoring.py
+**What it does:** Demonstrates thermal protection and core temperature monitoring  
+**Good for:** Understanding hardware safety features and system monitoring  
+**Concepts:** Hardware protection, thermal management, system monitoring
+
 ## Learning Path
 
 **Beginner:** Start with `01_basic_lights.py`, then `02_read_sensors.py`, then `05_simple_greenhouse.py`
 
 **Intermediate:** Try `04_data_logging.py` and modify `05_simple_greenhouse.py` with your own ideas
 
-**Advanced:** Study `03_climate_control.py` to learn asynchronous programming
+**Advanced:** Study `03_climate_control.py` to learn asynchronous programming, and `06_thermal_monitoring.py` for system monitoring
 
 ## Tips for Students
 

@@ -170,6 +170,28 @@ print(f"Fan speed: {fan_rpm} RPM")
 # Soil moisture (if connected)
 moisture = gbebox.sensor.moisture()
 print(f"Soil moisture: {moisture}")
+
+# Core temperature (RP2040 internal sensor)
+core_temp = gbebox.sensor.core_temperature()
+print(f"Core temperature: {core_temp}°C")
+```
+
+
+### Thermal Safety
+
+The GBE Box has built-in thermal protection that automatically shuts off the LED panel if the internal temperature gets too hot (above 65°C). This protects the hardware from damage.
+
+```micropython
+# Check thermal status
+from gbebox.actuators import light
+thermal_status = light.get_thermal_status()
+
+if thermal_status['thermal_shutdown_active']:
+    print("THERMAL PROTECTION ACTIVE - LEDs are shut off for safety")
+    print(f"Core temperature: {thermal_status['temperature']}°C")
+    print("LEDs will turn back on when temperature drops below 55°C")
+else:
+    print("Thermal status normal")
 ```
 
 ### All Sensors at Once
@@ -484,10 +506,11 @@ asyncio.run(climate_control())
 
 ---
 
-## 📖 Notes
+## Notes
 
 - **Sensor values return `None`** if the sensor is not connected or reading fails
 - **RGBW values have safety limits**: Red (0-160), Green (0-71), Blue (0-75), White (0-117). Values above these limits are automatically reduced to prevent overheating.
+- **Thermal protection**: LED panel automatically shuts off if core temperature exceeds 65°C and re-enables at 55°C
 - **Fan speed range**: 0-255 (0 = off, 255 = maximum speed)
 - **All async functions** must be used with `await` inside async functions
 - **Time functions** use 24-hour format (HH:MM:SS)
@@ -502,6 +525,7 @@ The `examples/` folder contains sample MicroPython programs to help you get star
 - **03_climate_control.py** - Advanced automated control using asynchronous programming
 - **04_data_logging.py** - Save sensor data to CSV files on the SD card  
 - **05_simple_greenhouse.py** - Beginner-friendly greenhouse automation
+- **06_thermal_monitoring.py** - Learn about thermal protection and core temperature monitoring
 
 Each example includes detailed comments explaining how the code works. Start with the basic examples and work your way up to more advanced programs.
 

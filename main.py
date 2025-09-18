@@ -38,13 +38,19 @@ def run_from_repl():
 
 async def main():
     
+    # Startup pulse - show as early as possible
+    await gbebox.indicator.pulse(color="magenta", duration=1)
+    
     print("  ____ ____  _____")
     print(" / ___| __ )| ____|   GROWING BEYOND EARTH(R)")
     print("| |  _|  _ \\|  _|     FAIRCHILD TROPICAL BOTANIC GARDEN")
     print("| |_| | |_) | |___    Raspberry Pi Pico W / MicroPython")
     print(" \\____|____/|_____|   Software release date: " + gbebox.software_date + "\n\n")
 
-
+    # Detect and configure hardware version for accurate sensor calibration
+    from gbebox.hardware import detect_and_configure_hardware
+    detect_and_configure_hardware()
+    
     # Attempt to load previous run data from JSON, set lastrun to False if unavailable
     try:
         with open('/cache/lastrun.json', 'r') as lr_file:
@@ -82,8 +88,6 @@ async def main():
         gbebox.indicator.on("green")
         bootloader() 
 
-    # Startup pulse
-    await gbebox.indicator.pulse(color="magenta", duration=1)
     
     # Connect to Wi-Fi
     gbebox.wifi.connect()

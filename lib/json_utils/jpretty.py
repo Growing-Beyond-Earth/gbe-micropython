@@ -35,8 +35,15 @@ def jpretty(data, indent=4):
             result += "\n" + indent_str + "]"
         elif isinstance(obj, str):
             result += '"' + obj + '"'
-        else:
+        elif isinstance(obj, bool):
+            result += "true" if obj else "false"
+        elif obj is None:
+            result += "null"
+        elif isinstance(obj, (int, float)):
             result += str(obj)
+        else:
+            # For other types, convert to string and quote it
+            result += '"' + str(obj) + '"'
         return result
     
     json_string = recursive_format(data)

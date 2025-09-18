@@ -90,9 +90,43 @@ In this example, the default is to have all lights off (0) but keep the fan runn
 | `blue` | Blue LED brightness | 0-75 | 0 = off, 40 = medium, 75 = maximum |
 | `white` | White LED brightness | 0-117 | 0 = off, 60 = medium, 117 = maximum |
 | `fan` | Fan speed | 0-255 | 0 = off, 128 = medium, 255 = maximum |
+| `target_watts` | Target power consumption (optional) | 2.0+ | Automatically adjusts PWM values to achieve target power |
 
-### Safety First!
-The LED limits (like red maxing out at 160 instead of 255) are **safety features** built by the LED manufacturer to prevent overheating. If you try to set red to 200, the GBE Box will automatically reduce it to 160 to keep your system safe.
+### Hardware Protection
+The LED limits (like red maxing out at 160 instead of 255) are **hardware protection limits** built by the LED manufacturer to prevent component damage from overheating. If you try to set red to 200, the GBE Box will automatically reduce it to 160 to protect the LED hardware.
+
+### Power-Based Light Control (target_watts)
+
+The optional `target_watts` parameter provides **consistent light output** across different GBE Box hardware versions by automatically adjusting PWM values to achieve a specific power consumption target.
+
+#### How It Works:
+1. **Set initial PWM values** for desired color balance (red, green, blue, white)
+2. **Specify target power** consumption in watts using `target_watts`
+3. **System automatically adjusts** all PWM values proportionally until actual power consumption matches the target
+4. **Maintains color ratios** while ensuring consistent light intensity
+
+#### Benefits:
+- **Hardware independence**: Same results across v1.0, v1.4, and v1.5 boards
+- **Research reproducibility**: Identical power consumption = identical light output
+- **Energy efficiency**: Precise power control for consistent experiments
+
+#### Usage Notes:
+- **Minimum power**: Target must be ≥2.0W for reliable measurement
+- **Hardware limits**: System respects LED safety limits during adjustment
+- **Fallback behavior**: If power sensor unavailable, uses standard PWM control
+- **Optional feature**: Can use PWM-only control by omitting `target_watts`
+
+#### Example:
+```json
+{
+  "red": 80,
+  "green": 20, 
+  "blue": 40,
+  "white": 100,
+  "target_watts": 25.0
+}
+```
+This maintains the 80:20:40:100 color ratio while adjusting all values to achieve exactly 25.0W power consumption.
 
 ---
 
@@ -114,7 +148,8 @@ Control hardware based on daily schedules (photoperiods).
       "red": 10,
       "green": 0,
       "blue": 30,
-      "white": 115
+      "white": 115,
+      "target_watts": 23.5
     }
   ]
 }

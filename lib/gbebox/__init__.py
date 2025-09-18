@@ -22,14 +22,38 @@ def _load_version():
 
 software_date = _load_version()
 
+# Hardware version to date mapping for cloud server compatibility
+_HARDWARE_VERSION_DATES = {
+    "v1.0": "2024-08-07",
+    "v1.4": "2025-08-11", 
+    "v1.5": "2025-09-01"
+}
+
+def _get_hardware_date():
+    """Get hardware date based on detected hardware version."""
+    try:
+        hw_info = get_hardware_info()
+        if hw_info and hw_info.get('detection_successful', False):
+            version = hw_info.get('hardware_version', 'v1.5')
+            return _HARDWARE_VERSION_DATES.get(version, "2025-09-01")  # Default to v1.5 date
+        else:
+            return "2025-09-01"  # Default to v1.5 date if detection fails
+    except Exception:
+        return "2025-09-01"  # Default to v1.5 date on any error
+
+hardware_date = _get_hardware_date()
+
 # Import all modules to create the unified API
 from .hardware import (
-    board, i2c0, i2c1, spi0, led, usb_connected, board_config
+    board, i2c0, i2c1, spi0, led, usb_connected, board_config,
+    detect_and_configure_hardware, get_hardware_info, force_hardware_redetection,
+    system
 )
 
 from .sensors import sensor
 
 from .actuators import light, fan
+
 
 from .indicator import indicator
 
@@ -40,7 +64,7 @@ from .networking import wifi, wlan
 from .clock import clock
 
 # Import application logic and utilities
-from application import calc, system, Run, ProgramEngine, WatchdogManager, GarbageCollector, DataLogger
+from application import calc, Run, ProgramEngine, WatchdogManager, GarbageCollector, DataLogger
 
 # Import built-in libraries commonly used by student programs
 import time
@@ -50,6 +74,7 @@ import uasyncio as asyncio
 __all__ = [
     # Hardware
     'board', 'i2c0', 'i2c1', 'spi0', 'led', 'usb_connected',
+    'detect_and_configure_hardware', 'get_hardware_info', 'force_hardware_redetection',
     
     # Sensors
     'sensor',
@@ -76,7 +101,7 @@ __all__ = [
     'Run', 'ProgramEngine',
     
     # Version info
-    'software_date',
+    'software_date', 'hardware_date',
     
     # Common imports for convenience
     'time', 'asyncio'
@@ -95,5 +120,5 @@ def get_system_info():
     }
 
 # Print initialization message when imported
-print(f"GBE Box Library loaded - Software date: {software_date}")
-print("Hardware abstraction initialized")
+# print(f"GBE Box Library loaded - Software date: {software_date}")
+# print("Hardware abstraction initialized")

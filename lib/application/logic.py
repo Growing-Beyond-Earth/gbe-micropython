@@ -28,6 +28,7 @@ class ProgramEngine:
         self.last_sensor_check_time = 0
         self.cached_sensor_conditions = None
         
+        
         # Initialize sub-components
         self.watchdog = WatchdogManager()
         self.logger = DataLogger(self, log_interval)
@@ -61,6 +62,7 @@ class ProgramEngine:
                     await self._determine_and_apply_conditions(self.program_json, check_sensors=True)
                     self.last_sensor_check_time = current_time
                 
+                
                 await asyncio.sleep(1)
                 
             except Exception as e:
@@ -85,7 +87,30 @@ class ProgramEngine:
         )
         
         # Apply changes if needed
-        if desired["rgbw"] != current_rgbw:
+        if desired.get("target_watts") is not None:
+            # Power-based control - check if target or initial PWM values changed
+            target_watts = desired["target_watts"]
+            r, g, b, w = desired["rgbw"]
+            
+            # Check if this is the same power target we already achieved
+            if (hasattr(light, '_last_power_target') and 
+                light._last_power_target == target_watts and
+                light._last_power_result is not None and
+                light._last_power_result.get('success', False)):
+                # Target already achieved, no need to adjust
+                pass
+            else:
+                # New target or failed previous attempt - run power adjustment
+                result = light.set_rgbw_with_power_target(r, g, b, w, target_watts)
+                
+                if not result['success']:
+                    print(f"Power-based control failed: {result['error']}")
+                    # Fall back to standard PWM control
+                    light.rgbw(*desired["rgbw"])
+                else:
+                    print(f"Power-based control succeeded: {result['actual_power']:.1f}W target {result['target_power']:.1f}W")
+        elif desired["rgbw"] != current_rgbw:
+            # Standard PWM control only when no target_watts
             light.rgbw(*desired["rgbw"])
         
         if desired["fan"] != current_fan:
@@ -100,7 +125,7 @@ class ProgramEngine:
         if default_actions:
             desired = self._extract_conditions(default_actions)
         else:
-            desired = {"rgbw": [0, 0, 0, 0], "fan": 0}
+            desired = {"rgbw": [0, 0, 0, 0], "fan": 0, "target_watts": None}
         
         # Process all loops and override with active conditions
         for loop in loops:
@@ -194,9 +219,10 @@ class ProgramEngine:
             return False, []
     
     def _extract_conditions(self, actions):
-        """Extract RGBW and fan settings from action list."""
+        """Extract RGBW, fan, and power target settings from action list."""
         rgbw = [None, None, None, None]
         fan_setting = None
+        target_watts = None
         
         for action in actions:
             rgbw[0] = action.get("red", rgbw[0])
@@ -206,23 +232,34 @@ class ProgramEngine:
             
             if "fan" in action:
                 fan_setting = action["fan"]
+                
+            if "target_watts" in action:
+                target_watts = action["target_watts"]
         
-        return {"rgbw": rgbw, "fan": fan_setting}
+        return {"rgbw": rgbw, "fan": fan_setting, "target_watts": target_watts}
     
     def _merge_conditions(self, current, new):
         """Merge new conditions into current conditions."""
-        current["rgbw"] = list(current["rgbw"])
-        
-        # Merge RGBW values
-        for i in range(4):
-            if new["rgbw"][i] is not None:
-                current["rgbw"][i] = new["rgbw"][i]
+        # Only convert to list if we need to modify it
+        needs_modification = any(new["rgbw"][i] is not None for i in range(4))
+        if needs_modification:
+            current["rgbw"] = list(current["rgbw"])
+            
+            # Merge RGBW values
+            for i in range(4):
+                if new["rgbw"][i] is not None:
+                    current["rgbw"][i] = new["rgbw"][i]
         
         # Merge fan setting
         if new["fan"] is not None:
             current["fan"] = new["fan"]
+            
+        # Merge target watts setting
+        if new["target_watts"] is not None:
+            current["target_watts"] = new["target_watts"]
         
         return current
+    
 
 
 class WatchdogManager:
@@ -260,7 +297,7 @@ class GarbageCollector:
         while True:
             gc.collect()
             gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)  # More frequent GC for memory-constrained operation
 
 
 class DataLogger:
@@ -294,6 +331,11 @@ class DataLogger:
         """Start the logging loop."""
         while True:
             await asyncio.sleep(self.interval)
+            
+            # Force garbage collection before data collection
+            import gc
+            gc.collect()
+            
             sensor_data = self._collect_sensor_data()
             await self._log_to_sd(sensor_data)
             await self._upload_to_cloud(sensor_data)
@@ -317,20 +359,22 @@ class DataLogger:
     
     async def _log_to_sd(self, sensor_data):
         """Log data to SD card."""
-        csv_row = '{},{},{},{},{},{},{},{},{},{},{},{}\n'.format(
-            sensor_data.get('Date', ''),
-            sensor_data.get('Time', ''),
-            sensor_data.get('Temperature (C)', ''),
-            sensor_data.get('Humidity (%)', ''),
-            sensor_data.get('CO2 (ppm)', ''),
-            sensor_data.get('Pressure (Pa)', ''),
-            sensor_data.get('Lux (lx)', ''),
-            sensor_data.get('Voltage (V)', ''),
-            sensor_data.get('Current (mA)', ''),
-            sensor_data.get('Power (W)', ''),
-            sensor_data.get('Fan Speed (rpm)', ''),
-            sensor_data.get('Moisture', '')
-        )
+        # More memory-efficient CSV construction
+        csv_parts = [
+            str(sensor_data.get('Date', '')),
+            str(sensor_data.get('Time', '')),
+            str(sensor_data.get('Temperature (C)', '')),
+            str(sensor_data.get('Humidity (%)', '')),
+            str(sensor_data.get('CO2 (ppm)', '')),
+            str(sensor_data.get('Pressure (Pa)', '')),
+            str(sensor_data.get('Lux (lx)', '')),
+            str(sensor_data.get('Voltage (V)', '')),
+            str(sensor_data.get('Current (mA)', '')),
+            str(sensor_data.get('Power (W)', '')),
+            str(sensor_data.get('Fan Speed (rpm)', '')),
+            str(sensor_data.get('Moisture', ''))
+        ]
+        csv_row = ','.join(csv_parts) + '\n'
         
         try:
             from gbebox.storage import sd
@@ -367,6 +411,11 @@ class DataLogger:
             # Add system info to data
             sensor_data['ID'] = board['id']
             
+            # Add software and hardware dates for cloud server tracking
+            import gbebox
+            sensor_data['software_date'] = gbebox.software_date
+            sensor_data['hardware_date'] = gbebox.hardware_date
+            
             # Add program hash if available
             if self.program_engine.program_json:
                 try:
@@ -394,10 +443,11 @@ class DataLogger:
             
             response = None
             try:
-                # Basic memory check
+                # Force garbage collection before upload
                 import gc
+                gc.collect()
                 free_memory = gc.mem_free()
-                if free_memory < 50000:
+                if free_memory < 30000:
                     print(f"Skipping cloud upload due to low memory: {free_memory} bytes free")
                     return
                 
@@ -412,9 +462,8 @@ class DataLogger:
                 if response:
                     response.close()
                 
-                # Clean up variables
+                # Clean up variables and force garbage collection
                 del json_data, filtered_data
-                import gc
                 gc.collect()
             
         except Exception as e:

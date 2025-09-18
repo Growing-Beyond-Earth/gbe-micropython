@@ -81,21 +81,34 @@ als = const(0x04)
 white = const(0x05)
 interrupt = const(0x06)
 
-#gain            0.125                    0.25                    1                        2                         integration time
-confValues = {  25: {1/8: bytearray([0x00, 0x13]), 1/4: bytearray([0x00,0x1B]), 1: bytearray([0x00, 0x01]), 2: bytearray([0x00, 0x0B])}, #25
-                50: {1/8: bytearray([0x00, 0x12]), 1/4: bytearray([0x00,0x1A]), 1: bytearray([0x00, 0x02]), 2: bytearray([0x00, 0x0A])}, #50
-                100:{1/8: bytearray([0x00, 0x10]), 1/4: bytearray([0x00,0x18]), 1: bytearray([0x00, 0x00]), 2: bytearray([0x00, 0x08])}, #100
-                200:{1/8: bytearray([0x40, 0x10]), 1/4: bytearray([0x40,0x18]), 1: bytearray([0x40, 0x00]), 2: bytearray([0x40, 0x08])}, #200
-                400:{1/8: bytearray([0x80, 0x10]), 1/4: bytearray([0x80,0x18]), 1: bytearray([0x80, 0x00]), 2: bytearray([0x80, 0x08])}, #400
-                800:{1/8: bytearray([0xC0, 0x10]), 1/4: bytearray([0xC0,0x18]), 1: bytearray([0xC0, 0x00]), 2: bytearray([0xC0, 0x08])}} #800
+def _get_conf_value(integration_time, gain):
+    """Generate configuration values dynamically to save memory."""
+    # Map integration time to base values
+    it_map = {25: 0x13, 50: 0x12, 100: 0x10, 200: 0x10, 400: 0x10, 800: 0x10}
+    
+    # Map gain to bit adjustments
+    gain_map = {1/8: 0x00, 1/4: 0x08, 1: -0x12, 2: -0x08}
+    
+    # Calculate integration time prefix
+    it_prefix = 0x00 if integration_time <= 100 else {200: 0x40, 400: 0x80, 800: 0xC0}[integration_time]
+    
+    base_val = it_map[integration_time]
+    gain_adj = gain_map[gain]
+    
+    return bytearray([it_prefix, base_val + gain_adj])
 
-#gain               0.125,  0.25,   1,      2       integration time
-gainValues = {  25: {1/8: 1.8432, 1/4: 0.9216, 1: 0.2304, 2: 0.1152}, #25
-                50: {1/8: 0.9216, 1/4: 0.4608, 1: 0.1152, 2: 0.0576}, #50
-                100:{1/8: 0.4608, 1/4: 0.2304, 1: 0.0288, 2: 0.0144}, #100
-                200:{1/8: 0.2304, 1/4: 0.1152, 1: 0.0288, 2: 0.0144}, #200
-                400:{1/8: 0.1152, 1/4: 0.0576, 1: 0.0144, 2: 0.0072}, #400
-                800:{1/8: 0.0876, 1/4: 0.0288, 1: 0.0072, 2: 0.0036}} #800
+def _get_gain_value(integration_time, gain):
+    """Calculate gain values dynamically to save memory."""
+    # Base calculation: starts at 1.8432 for IT=25, gain=1/8
+    base = 1.8432
+    
+    # Gain multipliers
+    gain_mult = {1/8: 1, 1/4: 0.5, 1: 0.125, 2: 0.0625}
+    
+    # Integration time divisors  
+    it_div = {25: 1, 50: 2, 100: 4, 200: 8, 400: 16, 800: 21.05}
+    
+    return base * gain_mult[gain] / it_div[integration_time]
 
 
 # fin des constante
@@ -126,18 +139,11 @@ class VEML7700:
             raise ValueError('An I2C object is required.')
         self.i2c = i2c
 
-        confValuesForIt = confValues.get(it)
-        gainValuesForIt = gainValues.get(it)
-        if confValuesForIt is not None and gainValuesForIt is not None:
-            confValueForGain = confValuesForIt.get(gain)
-            gainValueForGain = gainValuesForIt.get(gain)
-            if confValueForGain is not None and gainValueForGain is not None:
-                self.confValues = confValueForGain
-                self.gain = gainValueForGain
-            else:
-                raise ValueError('Wrong gain value. Use 1/8, 1/4, 1, 2')
-        else:
-            raise ValueError('Wrong integration time value. Use 25, 50, 100, 200, 400, 800')
+        try:
+            self.confValues = _get_conf_value(it, gain)
+            self.gain = _get_gain_value(it, gain)
+        except (KeyError, ValueError):
+            raise ValueError('Invalid integration time (use 25, 50, 100, 200, 400, 800) or gain (use 1/8, 1/4, 1, 2)')
 
         self.init()
 

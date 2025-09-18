@@ -1,0 +1,45 @@
+{
+  "settings": {
+    "default_actions": [
+      {
+        "red": 0,
+        "green": 0,
+        "blue": 0,
+        "white": 0,
+        "fan": 40
+      }
+    ],
+    "loops": [
+      {
+        "type": "time",
+        "start": "07:00",
+        "end": "19:00", 
+        "actions": [
+          {
+            "red": 80,
+            "green": 20,
+            "blue": 40,
+            "white": 100,
+            "target_watts": 25.0,
+            "fan": 120
+          }
+        ]
+      },
+      {
+        "type": "time",
+        "start": "12:00",
+        "end": "14:00",
+        "actions": [
+          {
+            "red": 120,
+            "green": 30,
+            "blue": 60,
+            "white": 80,
+            "target_watts": 35.0,
+            "fan": 150
+          }
+        ]
+      }
+    ]
+  }
+}

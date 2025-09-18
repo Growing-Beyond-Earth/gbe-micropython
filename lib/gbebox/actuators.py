@@ -5,6 +5,7 @@ Provides consistent instance-based API for hardware control.
 Addresses static/instance method inconsistencies from original design.
 """
 
+import time
 from machine import Pin, PWM
 from .hardware import board
 
@@ -43,6 +44,10 @@ class LightController:
             'blue': 75,
             'white': 117
         }
+        
+        # Power-based control state tracking
+        self._last_power_target = None
+        self._last_power_result = None
     
     def red(self, value=None):
         """Set or get red channel value (0-160)."""
@@ -82,6 +87,11 @@ class LightController:
             self.blue(b)
         if w is not None:
             self.white(w)
+            
+        # Clear power control cache when manually setting PWM values
+        if r is not None or g is not None or b is not None or w is not None:
+            self._last_power_target = None
+            self._last_power_result = None
         
         return (self.red(), self.green(), self.blue(), self.white())
     
@@ -93,7 +103,170 @@ class LightController:
         """Turn all lights off."""
         self.rgbw(0, 0, 0, 0)
     
-    
+    def set_rgbw_with_power_target(self, r, g, b, w, target_watts, tolerance=0.5, max_iterations=5):
+        """
+        Set RGBW channels to achieve a target power consumption.
+        
+        Uses iterative adjustment to scale PWM values until actual power consumption
+        matches the target within the specified tolerance.
+        
+        Args:
+            r, g, b, w (int): Initial PWM values for red, green, blue, white channels
+            target_watts (float): Target power consumption in watts
+            tolerance (float): Acceptable power difference in watts (default 0.5W)
+            max_iterations (int): Maximum adjustment iterations (default 5)
+            
+        Returns:
+            dict: Results with final PWM values, actual power, and success status
+        """
+        # Check if we already have a successful result for this target
+        if (self._last_power_target == target_watts and 
+            self._last_power_result is not None and 
+            self._last_power_result.get('success', False)):
+            
+            # Use the previous successful result (no need to copy since we don't modify it)
+            self.rgbw(*self._last_power_result['final_rgbw'])
+            return self._last_power_result
+        
+        # Validate inputs
+        if target_watts <= 0:
+            return {
+                'success': False, 
+                'error': 'Target watts must be positive',
+                'final_rgbw': (r, g, b, w),
+                'actual_power': 0
+            }
+        
+        if target_watts < 2:
+            return {
+                'success': False,
+                'error': 'Target watts too low for reliable power measurement (minimum 2W)',
+                'final_rgbw': (r, g, b, w), 
+                'actual_power': 0
+            }
+        
+        # Check if power sensor is available and initial conditions
+        try:
+            from gbebox.sensors import sensor
+            
+            # Check voltage first - need sufficient power supply
+            voltage = sensor.voltage()
+            if voltage is None or voltage < 20:
+                self.rgbw(r, g, b, w)
+                return {
+                    'success': False,
+                    'error': f'Insufficient voltage for power control: {voltage}V (need >20V)',
+                    'final_rgbw': (r, g, b, w),
+                    'actual_power': None
+                }
+            
+            # Test if we can get initial power reading
+            initial_power = sensor.power()
+            if initial_power is None:
+                # Fall back to standard PWM control if no power sensor
+                self.rgbw(r, g, b, w)
+                return {
+                    'success': False,
+                    'error': 'Power sensor not available, using PWM-only control',
+                    'final_rgbw': (r, g, b, w),
+                    'actual_power': None
+                }
+                
+        except Exception as e:
+            self.rgbw(r, g, b, w)
+            return {
+                'success': False,
+                'error': f'Sensor error: {e}',
+                'final_rgbw': (r, g, b, w),
+                'actual_power': None
+            }
+        
+        # Start iterative adjustment
+        current_r, current_g, current_b, current_w = r, g, b, w
+        
+        # Apply initial PWM values first to turn on lights
+        self.rgbw(current_r, current_g, current_b, current_w)
+        
+        # Wait for initial stabilization
+        time.sleep(3.0)
+        
+        for iteration in range(max_iterations):
+            # Get actual power consumption with multiple attempts
+            actual_power = None
+            for attempt in range(3):
+                try:
+                    reading = sensor.power()
+                    if reading is not None and reading > 0:
+                        actual_power = reading
+                        break
+                    else:
+                        time.sleep(0.5)  # Brief wait between attempts
+                except Exception:
+                    time.sleep(0.5)
+            
+            if actual_power is None or actual_power <= 0:
+                return {
+                    'success': False,
+                    'error': f'Unable to get valid power reading after multiple attempts on iteration {iteration + 1}',
+                    'final_rgbw': (current_r, current_g, current_b, current_w),
+                    'actual_power': actual_power
+                }
+            
+            # Check if we're within tolerance
+            power_diff = abs(actual_power - target_watts)
+            if power_diff <= tolerance:
+                # Store successful result for future use
+                result = {
+                    'success': True,
+                    'iterations': iteration + 1,
+                    'final_rgbw': (current_r, current_g, current_b, current_w),
+                    'actual_power': actual_power,
+                    'target_power': target_watts,
+                    'power_diff': power_diff
+                }
+                self._last_power_target = target_watts
+                self._last_power_result = result
+                return result
+            
+            # Calculate scaling factor for next iteration
+            if actual_power > 0:
+                scale_factor = target_watts / actual_power
+                
+                # Apply scaling with hardware limits
+                new_r = min(self._limits['red'], max(0, int(current_r * scale_factor)))
+                new_g = min(self._limits['green'], max(0, int(current_g * scale_factor)))
+                new_b = min(self._limits['blue'], max(0, int(current_b * scale_factor)))
+                new_w = min(self._limits['white'], max(0, int(current_w * scale_factor)))
+                
+                # Check if we've hit hardware limits and can't scale further
+                if (new_r == current_r and new_g == current_g and 
+                    new_b == current_b and new_w == current_w):
+                    return {
+                        'success': False,
+                        'error': f'Hardware limits reached, cannot achieve {target_watts}W',
+                        'iterations': iteration + 1,
+                        'final_rgbw': (current_r, current_g, current_b, current_w),
+                        'actual_power': actual_power,
+                        'target_power': target_watts,
+                        'max_possible_power': actual_power
+                    }
+                
+                current_r, current_g, current_b, current_w = new_r, new_g, new_b, new_w
+                
+                # Apply new PWM values for next iteration
+                self.rgbw(current_r, current_g, current_b, current_w)
+                time.sleep(2.5)  # Wait for stabilization
+        
+        # Maximum iterations reached
+        return {
+            'success': False,
+            'error': f'Max iterations ({max_iterations}) reached without convergence',
+            'iterations': max_iterations,
+            'final_rgbw': (current_r, current_g, current_b, current_w),
+            'actual_power': actual_power,
+            'target_power': target_watts,
+            'power_diff': abs(actual_power - target_watts)
+        }
 
 
 class FanController:

@@ -5,8 +5,6 @@ Common calculations and helper functions.
 """
 
 import time
-import sys
-from io import StringIO
 
 
 class TimeCalculator:
@@ -51,12 +49,21 @@ class TimeCalculator:
         return total_seconds
     
     @staticmethod
+    def current_time():
+        """Get current time as HH:MM string using proper local time."""
+        from gbebox.clock import clock
+        local_datetime = clock.get_local_datetime_from_utc()
+        hour, minute = local_datetime[3:5]
+        return f"{hour:0>2}:{minute:0>2}"
+    
+    @staticmethod
     def current_date():
         """Get current date as YYYY-MM-DD string using proper local time."""
         from gbebox.clock import clock
         local_datetime = clock.get_local_datetime_from_utc()
         year, month, day = local_datetime[:3]
         return f"{year}-{month:0>2}-{day:0>2}"
+    
     
     @staticmethod
     def date_within_range(current_date, start_date, end_date=None):
@@ -130,30 +137,5 @@ class TimeCalculator:
             return start_time <= current_time <= end_time
 
 
-class SystemUtils:
-    """System-level utility functions for runtime detection and diagnostics."""
-    
-    @staticmethod
-    def display_system_info():
-        """Display system information including hardware ID, network info, and available sensors."""
-        # Import at function level to avoid circular imports
-        from gbebox.hardware import board
-        from gbebox.networking import wlan  
-        from gbebox.sensors import sensor
-        
-        print("Hardware ID:    " + board["id"])
-        if board["mac"]:
-            print("MAC address:    " + board["mac"])
-            
-        if wlan.ifconfig()[0]:     
-            print("IP Address:     " + wlan.ifconfig()[0] + "\n")
-        
-        print("Available Sensors:")
-        for sensor_info in sensor.get_available_sensors():
-            print(sensor_info)
-        print()
-
-
-# Create global instances for backward compatibility
+# Create global instance for backward compatibility
 calc = TimeCalculator()
-system = SystemUtils()

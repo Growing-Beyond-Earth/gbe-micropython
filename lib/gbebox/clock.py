@@ -153,7 +153,12 @@ class ClockManager:
             machine.RTC().datetime(local_rtc_time)
             
             self._ntp_synced = True
-            print(f"NTP sync successful - MCU: Local time, I2C RTC: UTC")
+            
+            # Format time strings for display
+            utc_str = f"{utc_time[0]}-{utc_time[1]:02d}-{utc_time[2]:02d} {utc_time[3]:02d}:{utc_time[4]:02d}:{utc_time[5]:02d}"
+            local_str = f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d} {local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}"
+            
+            print(f"NTP sync successful - UTC: {utc_str}, Local: {local_str}")
             return True
         except Exception as e:
             print(f"NTP sync error: {e}")

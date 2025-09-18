@@ -54,7 +54,7 @@ class SCD4X:
     def __init__(self, i2c_bus: I2C, address: int = SCD4X_DEFAULT_ADDR) -> None:
         self.i2c = i2c_bus
         self.address = address
-        self._buffer = bytearray(18)
+        self._buffer = bytearray(9)  # Reduced from 18 - only need 9 bytes for data reading
         self._cmd = bytearray(2)
         self._crc_buffer = bytearray(2)
 

@@ -93,11 +93,12 @@ class SDCardManager:
         for attempt in range(3):  # Try up to 3 times
             try:
                 if attempt > 0:
-                    print(f"Mounting SD card (attempt {attempt + 1}/3)...")
+                    # print(f"Mounting SD card (attempt {attempt + 1}/3)...")
                     import time
                     time.sleep(0.5)  # Wait between attempts
                 else:
-                    print("Mounting SD card...")
+                    pass
+                    # print("Mounting SD card...")
                 
                 # Give freshly inserted cards extra time to stabilize
                 if was_just_inserted and attempt == 0:
@@ -111,11 +112,11 @@ class SDCardManager:
                 vfs = uos.VfsFat(card)
                 uos.mount(vfs, '/sd')
                 self._mount_state = True
-                print("SD card mounted successfully")
+                # print("SD card mounted successfully")
                 
                 # Load/reload settings when card is mounted
                 if was_just_inserted:
-                    print("Loading settings from SD card...")
+                    # print("Loading settings from SD card...")
                     self.load_settings()
                 
                 # Clear initial boot flag after first successful mount

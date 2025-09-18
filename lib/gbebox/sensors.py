@@ -106,7 +106,7 @@ class SensorManager:
     
     def _initialize_sensors(self):
         """Initialize all available sensors."""
-        # Power monitoring
+        # Power monitoring - will automatically use correct RSH value from cache
         self._sensors['ina'] = self._initialize_sensor('drivers.ina219_gbe', 'INA219', i2c0)
         
         # Environmental sensors (all on I2C1 - optional accessories)
@@ -249,6 +249,7 @@ class SensorManager:
             return SensorReading(lambda: self._sensors['seesaw'].get_moisture() if self._sensors['seesaw'].get_moisture() is not None else None, None, "seesaw")
         return SensorReading()
 
+
     @property
     def all(self):
         """Get all sensor readings as a dictionary."""
@@ -365,7 +366,7 @@ class SensorManager:
         """Monitor I2C1 for sensor changes and reload when detected."""
         import uasyncio as asyncio
         
-        print(f"Starting I2C1 sensor monitoring (scan interval: {scan_interval}s)")
+        # print(f"Starting I2C1 sensor monitoring (scan interval: {scan_interval}s)")
         
         # Initial scan
         self._last_i2c1_scan = self.scan_i2c1_bus()

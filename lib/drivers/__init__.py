@@ -15,4 +15,5 @@ Available drivers:
 - fan_rpm: Fan speed monitoring
 - ds3231: Real-time clock
 - sdcard: SD card storage interface
+- version_detect: Hardware version detection and INA219 calibration
 """

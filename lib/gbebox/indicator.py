@@ -83,6 +83,8 @@ class StatusIndicator:
         """
         Show system status through color patterns.
         
+        Priority order (highest to lowest):
+        - Red solid: Thermal shutdown active (overrides everything)
         - Blue pulse: SD card mounted and WiFi connected
         - White pulse: SD card mounted, no WiFi
         - Yellow pulse: No SD card
@@ -92,6 +94,7 @@ class StatusIndicator:
         from .networking import wlan
         
         while True:
+            # Status patterns
             if sd.mount():
                 if wlan.isconnected():
                     await self.pulse("blue")
