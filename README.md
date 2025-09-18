@@ -4,11 +4,11 @@ MicroPython software for the GBE Vegetable Production System control circuit, bu
 
 ## About Growing Beyond Earth
 
-Growing Beyond Earth® (GBE) is a citizen science project created by **Fairchild Tropical Botanic Garden** in partnership with **NASA**. GBE experiments on Earth are helping NASA learn to grow food on spacecraft, paving the way for future exploration into deep space.
+Growing Beyond Earth® (GBE) is a citizen science project created by **[Fairchild Tropical Botanic Garden](https://www.fairchildgarden.org)** in partnership with **[NASA](https://nasa.gov)**. GBE experiments on Earth are helping NASA learn to grow food on spacecraft, paving the way for future exploration into deep space.
 
 ## What is the GBE Box?
 
-The GBE Vegetable Production System is a tabletop growth chamber similar to experimental gardens on the International Space Station. It can accommodate many kinds of leafy green vegetables and herbs, along with some root vegetables and fruiting crops.
+The GBE Vegetable Production System is a tabletop growth chamber similar to **[experimental gardens on the International Space Station](https://science.nasa.gov/mission/veggie/)**. It can accommodate many kinds of leafy green vegetables and herbs, along with some root vegetables and fruiting crops.
 
 ### Key Features:
 - **Automated plant growth environment** with programmable LED lighting and fan control
@@ -152,35 +152,47 @@ The software version is stored in `version.txt` for easy updates.
 ### File Structure:
 ```
 /
-├── boot.py              # Hardware initialization
-├── main.py             # Program entry point
-├── version.txt         # Software version
-├── board.json          # Hardware pin configuration
-├── lib/                # MicroPython libraries
-│   ├── gbebox/         # Core GBE Box library
-│   │   ├── __init__.py     # Main API
-│   │   ├── hardware.py     # Hardware abstraction
-│   │   ├── sensors.py      # Sensor management
-│   │   ├── actuators.py    # Light/fan control
-│   │   ├── indicator.py    # Status LED
-│   │   ├── storage.py      # SD card operations
-│   │   ├── networking.py   # WiFi management
-│   │   └── clock.py        # Time utilities
-│   ├── application/    # Application logic
-│   │   ├── __init__.py     # Application modules
-│   │   ├── logic.py        # Program execution logic
-│   │   └── utils.py        # Utility functions
-│   ├── drivers/        # Hardware driver libraries
-│   │   ├── scd4x.py        # CO2 sensor driver
-│   │   ├── ina219_gbe.py   # Power monitor driver
-│   │   ├── veml7700.py     # Light sensor driver
-│   │   └── ...             # Other sensor drivers
-│   └── json_utils/     # JSON utilities
-│       ├── jpretty.py      # Pretty JSON formatting
-│       └── jsum.py         # JSON summary functions
-├── examples/           # Student example programs
-├── defaults/          # Default configuration files
-└── cache/            # Runtime cache directory
+├── boot.py                      # Hardware initialization
+├── main.py                     # Program entry point
+├── version.txt                 # Software version
+├── board.json                  # Hardware pin configuration
+├── README.md                   # This documentation file
+├── DICTIONARY.md               # Complete programming reference
+├── PROGRAM_JSON_FORMAT.md      # Program configuration file format
+├── lib/                        # MicroPython libraries
+│   ├── gbebox/                 # Core GBE Box library
+│   │   ├── __init__.py             # Main API
+│   │   ├── hardware.py             # Hardware abstraction
+│   │   ├── sensors.py              # Sensor management
+│   │   ├── actuators.py            # Light/fan control
+│   │   ├── indicator.py            # Status LED
+│   │   ├── storage.py              # SD card operations
+│   │   ├── networking.py           # WiFi management
+│   │   └── clock.py                # Time utilities
+│   ├── application/            # Application logic
+│   │   ├── __init__.py             # Application modules
+│   │   ├── logic.py                # Program execution logic
+│   │   └── utils.py                # Utility functions
+│   ├── drivers/                # Hardware driver libraries
+│   │   ├── __init__.py             # Driver module initialization
+│   │   ├── core_temp.py            # RP2040 core temperature
+│   │   ├── ds3231.py               # Real-time clock
+│   │   ├── fan_rpm.py              # Fan speed monitoring
+│   │   ├── ina219_gbe.py           # Power monitor driver
+│   │   ├── mpl3115a2.py            # Pressure/temperature sensor
+│   │   ├── scd4x.py                # CO2 sensor driver
+│   │   ├── sdcard.py               # SD card interface
+│   │   ├── seesaw.py               # Seesaw I2C interface
+│   │   ├── sht35.py                # Temperature/humidity sensor
+│   │   ├── stemma_soil_sensor.py   # Soil moisture sensor
+│   │   ├── veml7700.py             # Light sensor driver
+│   │   └── version_detect.py       # Hardware version detection
+│   └── json_utils/             # JSON utilities
+│       ├── jpretty.py              # Pretty JSON formatting
+│       └── jsum.py                 # JSON summary functions
+├── examples/                   # Student example programs
+├── defaults/                   # Default configuration files
+└── cache/                     # Runtime cache directory
 ```
 
 ### Contributing:
@@ -191,14 +203,11 @@ The software version is stored in `version.txt` for easy updates.
 
 ## Support
 
-- **Project Website**: https://www.fairchildgarden.org/gbe
+- **Project Website**: [Growing Beyond Earth](https://www.fairchildgarden.org/gbe)
 - **Educational Resources**: See `dictionary.md` and `examples/`
 - **MicroPython Help**: https://docs.micropython.org/
 
 ## License
 
-This software is developed by **Fairchild Tropical Botanic Garden** in partnership with **NASA** for the Growing Beyond Earth® educational program.
+This software is developed by **[Fairchild Tropical Botanic Garden](https://www.fairchildgarden.org)** in partnership with NASA for the [Growing Beyond Earth®](https://www.fairchildgarden.org/gbe) educational program.
 
----
-
-**Growing Beyond Earth® - Growing the future of space exploration, one plant at a time.**
