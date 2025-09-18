@@ -204,8 +204,9 @@ The software version is stored in `version.txt` for easy updates.
 ## Support
 
 - **Project Website**: [Growing Beyond Earth](https://www.fairchildgarden.org/gbe)
-- **Educational Resources**: See `dictionary.md` and `examples/`
+- **Educational Resources**: See `DICTIONARY.md` and `examples/`
 - **MicroPython Help**: https://docs.micropython.org/
+- **Raspberry Pi Pico W Resources**: [Pico-series Microcontrollers](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html)
 
 ## License
 
