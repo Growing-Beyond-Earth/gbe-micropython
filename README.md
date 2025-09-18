@@ -76,10 +76,10 @@ if temp:
     print(f"Temperature: {temp}°C")
 
 # Control fan based on temperature
-if temp and temp > 25:
-    gbebox.fan.on(speed=150)  # Cooling
+if temp and temp > 28:
+    gbebox.fan.on(speed=128)  # Cooling
 else:
-    gbebox.fan.on(speed=80)   # Gentle circulation
+    gbebox.fan.on(speed=64)   # Gentle circulation
 ```
 
 ### 3. Run Examples
