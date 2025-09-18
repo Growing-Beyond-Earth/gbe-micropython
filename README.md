@@ -1,10 +1,10 @@
-# Growing Beyond Earth (GBE) Box Control Software
+# [Growing Beyond Earth®](https://fairchildgarden.org/gbe) (GBE) Control Software
 
-MicroPython software for the GBE Vegetable Production System control circuit, built on Raspberry Pi Pico W.
+MicroPython software for the GBE control circuit, built on Raspberry Pi Pico W.
 
 ## About Growing Beyond Earth
 
-Growing Beyond Earth® (GBE) is a citizen science project created by **[Fairchild Tropical Botanic Garden](https://www.fairchildgarden.org)** in partnership with **[NASA](https://nasa.gov)**. GBE experiments on Earth are helping NASA learn to grow food on spacecraft, paving the way for future exploration into deep space.
+**[Growing Beyond Earth®](https://fairchildgarden.org/gbe)** (GBE) is a citizen science project created by **[Fairchild Tropical Botanic Garden](https://www.fairchildgarden.org)** in partnership with **[NASA](https://nasa.gov)**. GBE experiments on Earth are helping NASA learn to grow food on spacecraft, paving the way for future exploration into deep space.
 
 ## What is the GBE Box?
 
