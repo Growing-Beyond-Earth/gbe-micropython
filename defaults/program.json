@@ -16,10 +16,10 @@
         "end": "19:00",
         "actions": [
           {
-            "red": 10,
+            "red": 9,
             "green": 0,
-            "blue": 30,
-            "white": 115,
+            "blue": 26,
+            "white": 98,
             "target_watts": 25
           }
         ]
