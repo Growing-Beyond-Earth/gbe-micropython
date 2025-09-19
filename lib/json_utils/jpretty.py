@@ -4,7 +4,7 @@ JPretty MicroPython Library
 This library provides a function for formatting JSON data into a human-readable string format with customizable 
 indentation. It recursively formats dictionaries, lists, and other JSON-compatible objects to improve readability. 
 This tool is part of the Growing Beyond Earth® project and is designed to assist with organizing and presenting 
-JSON configuration and data files used in the GBE Control Box hardware.
+JSON configuration and data files used in the GBE control circuit hardware.
 
 Growing Beyond Earth® and this software are developed by Fairchild Tropical Botanic Garden, Miami, Florida, USA.
 

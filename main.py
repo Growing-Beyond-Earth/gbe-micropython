@@ -3,7 +3,7 @@
 
 # FAIRCHILD TROPICAL BOTANIC GARDEN
 
-# The Growing Beyond Earth (GBE) control box is a device that controls
+# The Growing Beyond Earth (GBE) control circuit is a device that controls
 # the LED lights and fan in a GBE growth chamber. It can also control
 # accessories including a 12v water pump and environmental sensors.
 # The device is based on a Raspberry Pi Pico W microcontroller running

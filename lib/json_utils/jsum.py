@@ -4,7 +4,7 @@ JSum MicroPython Library
 This library is an adaptation of the JSum project developed by Fraunhofer FOKUS, which provides a method to calculate 
 checksums of JSON objects. It has been modified for MicroPython to generate checksums of JSON data using different 
 hashing algorithms (SHA-1 and SHA-256) with customizable encoding (hex or base64). This library is designed to assist 
-with client-server data comparison in the Growing Beyond Earth® (GBE) Control Box project.
+with client-server data comparison in the Growing Beyond Earth® (GBE) control circuit project.
 
 Original source: https://github.com/fraunhoferfokus/JSum
 Licensed under the GNU Affero General Public License v3.0: https://www.gnu.org/licenses/

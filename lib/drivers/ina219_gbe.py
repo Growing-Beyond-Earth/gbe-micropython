@@ -3,7 +3,7 @@ INA219 GBE MicroPython Library
 
 This library provides a MicroPython driver for interfacing with the Texas Instruments INA219 current sensor, 
 allowing for accurate measurement of voltage, current, and power in circuits. The INA219 is an essential component 
-of the Growing Beyond Earth® (GBE) Control Box hardware, which monitors and manages power usage in various 
+of the Growing Beyond Earth® (GBE) control circuit hardware, which monitors and manages power usage in various 
 environmental control systems.
 
 The code is adapted from Adafruit's CircuitPython INA219 library (https://github.com/adafruit/Adafruit_CircuitPython_INA219) 
