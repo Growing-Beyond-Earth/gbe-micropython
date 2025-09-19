@@ -311,7 +311,28 @@ class DataLogger:
                           'Pressure (Pa),Lux (lx),Voltage (V),Current (mA),'
                           'Power (W),Fan Speed (rpm),Moisture\n')
         
+        # Cache program hash to avoid recomputing on every upload
+        self._cached_prog_hash = None
+        self._compute_program_hash()
+        
         self._initialize_log_file()
+    
+    def _compute_program_hash(self):
+        """Compute and cache the program hash."""
+        if self.program_engine.program_json:
+            try:
+                from json_utils import jsum
+                self._cached_prog_hash = jsum.digest(self.program_engine.program_json, 
+                                                   hash_algorithm='sha1', encoding='base64')
+            except Exception as e:
+                print(f"Error computing program hash: {e}")
+                self._cached_prog_hash = None
+        else:
+            self._cached_prog_hash = None
+    
+    def refresh_program_hash(self):
+        """Refresh the cached program hash when the program changes."""
+        self._compute_program_hash()
     
     def _initialize_log_file(self):
         """Create log file with headers if it doesn't exist."""
@@ -417,13 +438,8 @@ class DataLogger:
             sensor_data['hardware_date'] = gbebox.hardware_date
             
             # Add program hash if available
-            if self.program_engine.program_json:
-                try:
-                    prog_hash = jsum.digest(self.program_engine.program_json, 
-                                          hash_algorithm='sha1', encoding='base64')
-                    sensor_data['prog_hash'] = prog_hash
-                except Exception as e:
-                    print(f"Error computing program hash: {e}")
+            if self._cached_prog_hash:
+                sensor_data['prog_hash'] = self._cached_prog_hash
             
             # Add sensor serial if available
             if sensor.scd:
@@ -438,7 +454,7 @@ class DataLogger:
             filtered_data = {k: v for k, v in sensor_data.items() if v is not None}
             
             # Upload data
-            url = "https://growingbeyond.earth/log_json.php"
+            url = "http://growingbeyond.earth/log_json.php"
             json_data = json.dumps(filtered_data)
             
             response = None
@@ -510,8 +526,7 @@ class DataLogger:
             if not self.program_engine.program_json:
                 return
             
-            prog_hash = jsum.digest(self.program_engine.program_json, 
-                                  hash_algorithm='sha1', encoding='base64')
+            prog_hash = self._cached_prog_hash or ""
             
             upload_data = {
                 'ID': board['id'],
@@ -519,7 +534,7 @@ class DataLogger:
                 'prog_hash': prog_hash
             }
             
-            url = "https://growingbeyond.earth/prog.php"
+            url = "http://growingbeyond.earth/prog.php"
             json_data = json.dumps(upload_data)
             
             response = urequests.post(url, data=json_data, 
