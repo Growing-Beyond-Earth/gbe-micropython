@@ -27,6 +27,9 @@ class SDCardManager:
         self._timezone_config = None
         self._program_config = None
         
+        # Callback for program configuration changes
+        self._program_change_callback = None
+        
         # State tracking for SD card removal/insertion recovery
         self._last_known_state = self.is_present()
         self._mount_state = False
@@ -112,7 +115,7 @@ class SDCardManager:
                 vfs = uos.VfsFat(card)
                 uos.mount(vfs, '/sd')
                 self._mount_state = True
-                # print("SD card mounted successfully")
+                print("SD card mounted successfully")
                 
                 # Load/reload settings when card is mounted
                 if was_just_inserted:
@@ -239,7 +242,12 @@ class SDCardManager:
                 if ('program.json' not in uos.listdir('/sd') or 
                     not self._validate_json('/sd/program.json')):
                     self._copy_default_to_sd('program.json')
+                old_config = self._program_config
                 self._program_config = self._load_json('/sd/program.json')
+                
+                # Notify if program configuration changed
+                if old_config != self._program_config:
+                    self._notify_program_changed()
             else:
                 print("SD card mounted but no files found.")
                 self._wifi_config = None
@@ -250,7 +258,12 @@ class SDCardManager:
             print("SD card not mounted, loading from /defaults")
             self._wifi_config = self._load_json('/defaults/wifi_settings.json')
             self._timezone_config = self._load_json('/defaults/timezone.json')
+            old_config = self._program_config
             self._program_config = self._load_json('/defaults/program.json')
+            
+            # Notify if program configuration changed
+            if old_config != self._program_config:
+                self._notify_program_changed()
         
         return self._wifi_config, self._timezone_config, self._program_config
     
@@ -269,6 +282,18 @@ class SDCardManager:
         """Get program configuration."""
         return self._program_config
     
+    def register_program_change_callback(self, callback):
+        """Register a callback to be called when program configuration changes."""
+        self._program_change_callback = callback
+    
+    def _notify_program_changed(self):
+        """Notify registered callback that program configuration has changed."""
+        if self._program_change_callback:
+            try:
+                self._program_change_callback()
+            except Exception as e:
+                print(f"Error in program change callback: {e}")
+    
     def save_program(self, program_data):
         """Save program configuration to SD card with recovery."""
         if self.mount():
@@ -282,8 +307,14 @@ class SDCardManager:
                 
                 with open('/sd/program.json', 'w') as f:
                     f.write(formatted_data)
+                old_config = self._program_config
                 self._program_config = program_data
                 print("Program configuration saved to SD card")
+                
+                # Notify if program configuration changed
+                if old_config != self._program_config:
+                    self._notify_program_changed()
+                    
                 return True
             except OSError as e:
                 print(f"SD card I/O error saving program: {e}")
