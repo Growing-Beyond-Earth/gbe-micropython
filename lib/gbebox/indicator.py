@@ -80,15 +80,7 @@ class StatusIndicator:
             await asyncio.sleep(interval)
     
     async def status(self):
-        """
-        Show system status through color patterns.
-        
-        Priority order (highest to lowest):
-        - Red solid: Thermal shutdown active (overrides everything)
-        - Blue pulse: SD card mounted and WiFi connected
-        - White pulse: SD card mounted, no WiFi
-        - Yellow pulse: No SD card
-        """
+        """Show system status through color patterns."""
         # Import here to avoid circular dependencies
         from .storage import sd
         from .networking import wlan
