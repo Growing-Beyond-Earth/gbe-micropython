@@ -315,6 +315,10 @@ class DataLogger:
         self._cached_prog_hash = None
         self._compute_program_hash()
         
+        # Register for program change notifications
+        from gbebox.storage import sd
+        sd.register_program_change_callback(self.refresh_program_hash)
+        
         self._initialize_log_file()
     
     def _compute_program_hash(self):
