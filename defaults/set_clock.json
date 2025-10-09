@@ -1,0 +1,6 @@
+{
+  "_INSTRUCTIONS": "To manually set the clock, fill in 'date' (YYYY-MM-DD) and 'time' (HH:MM:SS in 24-hour format) with current LOCAL time. Optionally provide 'utc_offset' to update your timezone. The system will read these values once on next boot and then clear them from this file automatically.",
+  "date": "",
+  "time": "",
+  "utc_offset": ""
+}

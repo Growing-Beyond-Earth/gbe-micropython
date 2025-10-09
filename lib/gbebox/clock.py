@@ -33,9 +33,8 @@ class ClockManager:
         """Initialize the I2C RTC if available."""
         try:
             # Try to import and initialize DS3231
-            ds3231_module = __import__('drivers.ds3231')
-            ds3231 = getattr(ds3231_module, 'ds3231')
-            self._i2c_rtc = ds3231.DS3231(i2c0)
+            from drivers.ds3231 import DS3231
+            self._i2c_rtc = DS3231(i2c0)
             self._i2c_rtc_available = True
         except (ImportError, Exception) as e:
             print(f"I2C RTC not available: {e}")
@@ -60,13 +59,20 @@ class ClockManager:
         try:
             # Get UTC time from I2C RTC
             utc_time = [x for x in self._i2c_rtc.DateTime()]
-            
+            # I2C RTC format: (year, month, day, weekday, hour, minute, second, subsecond)
+
+            # Extract components (skip weekday at position 3)
+            year, month, day = utc_time[0], utc_time[1], utc_time[2]
+            hour, minute, second = utc_time[4], utc_time[5], utc_time[6]
+
             # Convert to timestamp and add offset for local time
-            utc_timestamp = time.mktime(tuple(utc_time[:6]) + (0, 0))
+            # time.mktime expects: (year, month, day, hour, minute, second, weekday, yearday)
+            utc_timestamp = time.mktime((year, month, day, hour, minute, second, 0, 0))
             local_timestamp = utc_timestamp + utc_offset
             local_time = time.localtime(local_timestamp)
-            
+
             # Set MCU to local time
+            # MCU RTC format: (year, month, day, weekday, hour, minute, second, subsecond)
             local_rtc_time = [
                 local_time[0], local_time[1], local_time[2], local_time[6],
                 local_time[3], local_time[4], local_time[5], 0
@@ -95,13 +101,20 @@ class ClockManager:
         try:
             # Get local time from MCU
             mcu_time = machine.RTC().datetime()
-            
+            # MCU format: (year, month, day, weekday, hour, minute, second, subsecond)
+
+            # Extract components (skip weekday at position 3)
+            year, month, day = mcu_time[0], mcu_time[1], mcu_time[2]
+            hour, minute, second = mcu_time[4], mcu_time[5], mcu_time[6]
+
             # Convert to timestamp and subtract offset to get UTC
-            local_timestamp = time.mktime(tuple(mcu_time[:6]) + (0, 0))
+            # time.mktime expects: (year, month, day, hour, minute, second, weekday, yearday)
+            local_timestamp = time.mktime((year, month, day, hour, minute, second, 0, 0))
             utc_timestamp = local_timestamp - utc_offset
             utc_time = time.localtime(utc_timestamp)
-            
+
             # Set I2C RTC to UTC time
+            # I2C RTC format: (year, month, day, weekday, hour, minute, second, subsecond)
             utc_rtc_time = [
                 utc_time[0], utc_time[1], utc_time[2], utc_time[6],
                 utc_time[3], utc_time[4], utc_time[5], 0
@@ -194,9 +207,19 @@ class ClockManager:
             else:
                 # MCU has valid local time, update I2C RTC with UTC
                 self._is_set = True
+
+                # Get times for display
+                mcu_time = machine.RTC().datetime()
+                local_time = time.localtime(time.mktime(tuple(mcu_time[:6]) + (0, 0)))
+                utc_timestamp = time.mktime(tuple(mcu_time[:6]) + (0, 0)) - utc_offset
+                utc_time = time.localtime(utc_timestamp)
+
+                local_str = f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d} {local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}"
+                utc_str = f"{utc_time[0]}-{utc_time[1]:02d}-{utc_time[2]:02d} {utc_time[3]:02d}:{utc_time[4]:02d}:{utc_time[5]:02d}"
+
                 success = self.sync_rtc_to_utc(utc_offset)
                 if success:
-                    print("I2C RTC updated with UTC time from MCU (local)")
+                    print(f"I2C RTC updated with UTC time from MCU (local) - UTC: {utc_str}, Local: {local_str}")
                 else:
                     print("MCU time valid but I2C RTC update failed")
         

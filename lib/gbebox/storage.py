@@ -120,7 +120,15 @@ class SDCardManager:
                 # Load/reload settings when card is mounted
                 if was_just_inserted:
                     # print("Loading settings from SD card...")
+                    old_wifi_config = self._wifi_config
                     self.load_settings()
+
+                    # Check for manual time setting
+                    self._check_and_apply_manual_time_setting()
+
+                    # Check if WiFi settings changed and reconnect if needed
+                    if old_wifi_config != self._wifi_config:
+                        self._reconnect_wifi_if_changed()
                 
                 # Clear initial boot flag after first successful mount
                 self._initial_boot = False
@@ -356,6 +364,48 @@ class SDCardManager:
             except Exception as e:
                 print(f"Error listing files in {path}: {e}")
         return []
+
+    def _check_and_apply_manual_time_setting(self):
+        """Check for and apply manual time setting from set_clock.json."""
+        try:
+            from .clock import clock
+            date_str, time_str, utc_offset_hours = clock._read_manual_time_setting()
+
+            if date_str and time_str:
+                print("Manual time setting detected in set_clock.json")
+                if clock._apply_manual_time_setting(date_str, time_str, utc_offset_hours):
+                    clock._clear_manual_time_setting()
+                    print("Manual time setting applied successfully")
+                else:
+                    print("Manual time setting failed")
+                    clock._clear_manual_time_setting()
+        except Exception as e:
+            print(f"Error checking manual time setting: {e}")
+
+    def _reconnect_wifi_if_changed(self):
+        """Reconnect to WiFi if credentials have changed."""
+        try:
+            from .networking import wifi
+
+            if not self._wifi_config or not self._wifi_config.get("NETWORK_NAME"):
+                print("WiFi credentials removed or invalid")
+                if wifi.is_connected():
+                    print("Disconnecting from WiFi")
+                    wifi.disconnect()
+                return
+
+            print("WiFi credentials updated, reconnecting...")
+
+            # Disconnect if currently connected
+            if wifi.is_connected():
+                wifi.disconnect()
+
+            # Connect with new credentials
+            result = wifi.connect(timeout=15)
+            print(result)
+
+        except Exception as e:
+            print(f"Error reconnecting WiFi: {e}")
 
 
 # Create global instance
