@@ -210,11 +210,15 @@ class ClockManager:
 
                 # Get times for display
                 mcu_time = machine.RTC().datetime()
-                local_time = time.localtime(time.mktime(tuple(mcu_time[:6]) + (0, 0)))
-                utc_timestamp = time.mktime(tuple(mcu_time[:6]) + (0, 0)) - utc_offset
+                # MCU format: (year, month, day, weekday, hour, minute, second, subsecond)
+                year, month, day = mcu_time[0], mcu_time[1], mcu_time[2]
+                hour, minute, second = mcu_time[4], mcu_time[5], mcu_time[6]
+
+                local_timestamp = time.mktime((year, month, day, hour, minute, second, 0, 0))
+                utc_timestamp = local_timestamp - utc_offset
                 utc_time = time.localtime(utc_timestamp)
 
-                local_str = f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d} {local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}"
+                local_str = f"{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
                 utc_str = f"{utc_time[0]}-{utc_time[1]:02d}-{utc_time[2]:02d} {utc_time[3]:02d}:{utc_time[4]:02d}:{utc_time[5]:02d}"
 
                 success = self.sync_rtc_to_utc(utc_offset)
@@ -291,7 +295,11 @@ class ClockManager:
             # Fall back to MCU time minus offset
             offset = self.get_utc_offset()
             mcu_time = machine.RTC().datetime()
-            local_timestamp = time.mktime(tuple(mcu_time[:6]) + (0, 0))
+            # MCU format: (year, month, day, weekday, hour, minute, second, subsecond)
+            year, month, day = mcu_time[0], mcu_time[1], mcu_time[2]
+            hour, minute, second = mcu_time[4], mcu_time[5], mcu_time[6]
+
+            local_timestamp = time.mktime((year, month, day, hour, minute, second, 0, 0))
             utc_timestamp = local_timestamp - offset
             utc_time = time.localtime(utc_timestamp)
             return (utc_time[0], utc_time[1], utc_time[2], utc_time[3], utc_time[4], utc_time[5])
