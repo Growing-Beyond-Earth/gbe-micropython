@@ -180,19 +180,32 @@ class ClockManager:
     def set_time(self, utc_offset=0):
         """
         Set system time using the best available source.
-        
+
         New architecture:
         - I2C RTC always stores UTC time
         - MCU always stores local time
-        - Priority: NTP -> I2C RTC (UTC) -> current MCU time
-        
+        - Priority: Manual setting -> NTP -> I2C RTC (UTC) -> current MCU time
+
         Args:
             utc_offset: UTC offset in seconds
-            
+
         Returns:
             bool: True if time was set successfully
         """
-        # Try NTP first (sets both MCU local and I2C UTC)
+        # Check for manual time setting first
+        date_str, time_str, utc_offset_hours = self._read_manual_time_setting()
+
+        if date_str and time_str:
+            # Manual time setting found
+            print("Manual time setting found in set_clock.json")
+            if self._apply_manual_time_setting(date_str, time_str, utc_offset_hours):
+                self._clear_manual_time_setting()
+                return True
+            else:
+                print("Manual time setting failed, falling back to automatic methods")
+                self._clear_manual_time_setting()
+
+        # Try NTP (sets both MCU local and I2C UTC)
         self._ntp_synced = self.ntp_sync(utc_offset)
         
         if self._ntp_synced:
@@ -333,8 +346,162 @@ class ClockManager:
         local_timestamp = utc_timestamp + offset
         local_time = time.localtime(local_timestamp)
         return (local_time[0], local_time[1], local_time[2], local_time[3], local_time[4], local_time[5])
-    
-    
+
+    def _read_manual_time_setting(self):
+        """
+        Read manual time setting from set_clock.json on SD card.
+
+        Returns:
+            tuple: (date_str, time_str, utc_offset_hours) or (None, None, None) if not set
+        """
+        try:
+            from .storage import sd
+            import json
+
+            if not sd.mount():
+                return None, None, None
+
+            try:
+                with open('/sd/set_clock.json', 'r') as f:
+                    data = json.load(f)
+            except OSError:
+                # File doesn't exist on SD, try to copy from defaults
+                try:
+                    with open('/defaults/set_clock.json', 'r') as src:
+                        content = src.read()
+                    with open('/sd/set_clock.json', 'w') as dst:
+                        dst.write(content)
+                except:
+                    pass
+                return None, None, None
+
+            date_str = data.get('date', '').strip()
+            time_str = data.get('time', '').strip()
+            utc_offset = data.get('utc_offset', '')
+
+            # Check if values are actually set (not empty)
+            if not date_str or not time_str:
+                return None, None, None
+
+            # Parse UTC offset if provided
+            utc_offset_hours = None
+            if utc_offset != '':
+                try:
+                    utc_offset_hours = float(utc_offset)
+                except:
+                    print(f"Invalid UTC offset in set_clock.json: {utc_offset}")
+
+            return date_str, time_str, utc_offset_hours
+
+        except Exception as e:
+            print(f"Error reading set_clock.json: {e}")
+            return None, None, None
+
+    def _clear_manual_time_setting(self):
+        """Clear the manual time settings in set_clock.json by restoring from defaults."""
+        try:
+            from .storage import sd
+
+            if not sd.mount():
+                return False
+
+            try:
+                # Copy the default template to SD card
+                with open('/defaults/set_clock.json', 'r') as src:
+                    content = src.read()
+                with open('/sd/set_clock.json', 'w') as dst:
+                    dst.write(content)
+
+                return True
+            except OSError:
+                return False
+
+        except Exception as e:
+            print(f"Error clearing set_clock.json: {e}")
+            return False
+
+    def _apply_manual_time_setting(self, date_str, time_str, utc_offset_hours=None):
+        """
+        Apply manual time setting from user input.
+
+        Args:
+            date_str: Date string in YYYY-MM-DD format (local time)
+            time_str: Time string in HH:MM:SS format (local time)
+            utc_offset_hours: UTC offset in hours, or None to use existing timezone
+
+        Returns:
+            bool: True if successful
+        """
+        try:
+            # Parse date and time
+            date_parts = date_str.split('-')
+            time_parts = time_str.split(':')
+
+            if len(date_parts) != 3 or len(time_parts) != 3:
+                print(f"Invalid date/time format in set_clock.json")
+                return False
+
+            year = int(date_parts[0])
+            month = int(date_parts[1])
+            day = int(date_parts[2])
+            hour = int(time_parts[0])
+            minute = int(time_parts[1])
+            second = int(time_parts[2])
+
+            # Update timezone.json if UTC offset was provided
+            if utc_offset_hours is not None:
+                try:
+                    from .storage import sd
+                    import json
+
+                    tz_data = {'time zone': {'UTC offset': utc_offset_hours}}
+
+                    try:
+                        from json_utils import jpretty
+                        formatted_data = jpretty.jpretty(tz_data)
+                    except ImportError:
+                        formatted_data = json.dumps(tz_data, indent=2)
+
+                    with open('/sd/timezone.json', 'w') as f:
+                        f.write(formatted_data)
+
+                    # Reload timezone config in storage manager
+                    sd.load_settings()
+
+                    print(f"Updated timezone to UTC{utc_offset_hours:+.1f}")
+                except Exception as e:
+                    print(f"Warning: Could not update timezone.json: {e}")
+
+            # Get UTC offset in seconds
+            utc_offset = calc.to_seconds(utc_offset_hours if utc_offset_hours is not None else self.get_utc_offset())
+
+            # Set MCU to local time
+            weekday = time.localtime(time.mktime((year, month, day, hour, minute, second, 0, 0)))[6]
+            local_rtc_time = [year, month, day, weekday, hour, minute, second, 0]
+            machine.RTC().datetime(local_rtc_time)
+
+            # Set I2C RTC to UTC time
+            if self._i2c_rtc_available:
+                local_timestamp = time.mktime((year, month, day, hour, minute, second, 0, 0))
+                utc_timestamp = local_timestamp - utc_offset
+                utc_time = time.localtime(utc_timestamp)
+                utc_rtc_time = [
+                    utc_time[0], utc_time[1], utc_time[2], utc_time[6],
+                    utc_time[3], utc_time[4], utc_time[5], 0
+                ]
+                self._i2c_rtc.DateTime(utc_rtc_time[:8])
+
+            local_str = f"{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
+            print(f"Clock set manually to: {local_str} (local time)")
+
+            self._is_set = True
+            return True
+
+        except Exception as e:
+            print(f"Error applying manual time setting: {e}")
+            return False
+
+
     @property
     def is_set(self):
         """Check if clock has been set (not at default time)."""

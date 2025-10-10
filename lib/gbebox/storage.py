@@ -123,13 +123,15 @@ class SDCardManager:
                     old_wifi_config = self._wifi_config
                     self.load_settings()
 
-                    # Check for manual time setting
-                    self._check_and_apply_manual_time_setting()
+                    # Only check time and WiFi after initial boot to avoid circular imports
+                    if not self._initial_boot:
+                        # Check for manual time setting
+                        self._check_and_apply_manual_time_setting()
 
-                    # Check if WiFi settings changed and reconnect if needed
-                    if old_wifi_config != self._wifi_config:
-                        self._reconnect_wifi_if_changed()
-                
+                        # Check if WiFi settings changed and reconnect if needed
+                        if old_wifi_config != self._wifi_config:
+                            self._reconnect_wifi_if_changed()
+
                 # Clear initial boot flag after first successful mount
                 self._initial_boot = False
                     
