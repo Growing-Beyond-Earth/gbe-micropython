@@ -154,12 +154,16 @@ class LightController:
             voltage = sensor.voltage()
             if voltage is None or voltage < 20:
                 self.rgbw(r, g, b, w)
-                return {
+                result = {
                     'success': False,
                     'error': f'Insufficient voltage for power control: {voltage}V (need >20V)',
                     'final_rgbw': (r, g, b, w),
                     'actual_power': None
                 }
+                # Cache this failure to prevent repeated attempts with same target
+                self._last_power_target = target_watts
+                self._last_power_result = result
+                return result
             
             # Test if we can get initial power reading
             initial_power = sensor.power()
@@ -172,7 +176,7 @@ class LightController:
                     'final_rgbw': (r, g, b, w),
                     'actual_power': None
                 }
-                
+
         except Exception as e:
             self.rgbw(r, g, b, w)
             return {
@@ -240,7 +244,7 @@ class LightController:
                 new_w = min(self._limits['white'], max(0, int(current_w * scale_factor)))
                 
                 # Check if we've hit hardware limits and can't scale further
-                if (new_r == current_r and new_g == current_g and 
+                if (new_r == current_r and new_g == current_g and
                     new_b == current_b and new_w == current_w):
                     return {
                         'success': False,

@@ -91,22 +91,21 @@ class ProgramEngine:
             # Power-based control - check if target or initial PWM values changed
             target_watts = desired["target_watts"]
             r, g, b, w = desired["rgbw"]
-            
-            # Check if this is the same power target we already achieved
-            if (hasattr(light, '_last_power_target') and 
+
+            # Check if this is the same power target we already tried (success or failure)
+            if (hasattr(light, '_last_power_target') and
                 light._last_power_target == target_watts and
-                light._last_power_result is not None and
-                light._last_power_result.get('success', False)):
-                # Target already achieved, no need to adjust
+                light._last_power_result is not None):
+                # Already tried this target - skip to avoid repeated error messages
+                # PWM values were already set during the cached attempt
                 pass
             else:
-                # New target or failed previous attempt - run power adjustment
+                # New target - run power adjustment
                 result = await light.set_rgbw_with_power_target(r, g, b, w, target_watts)
-                
+
                 if not result['success']:
                     print(f"Power-based control failed: {result['error']}")
-                    # Fall back to standard PWM control
-                    light.rgbw(*desired["rgbw"])
+                    # Note: PWM values already set in set_rgbw_with_power_target, no fallback needed
                 else:
                     print(f"Power-based control succeeded: {result['actual_power']:.1f}W target {result['target_power']:.1f}W")
         elif desired["rgbw"] != current_rgbw:
@@ -337,6 +336,19 @@ class DataLogger:
     def refresh_program_hash(self):
         """Refresh the cached program hash when the program changes."""
         self._compute_program_hash()
+
+        # Clear cached state in program engine to force reapplication of new program
+        self.program_engine.cached_sensor_conditions = None
+
+        # Clear light power target cache to force recalculation with new settings
+        try:
+            from gbebox.actuators import light
+            if hasattr(light, '_last_power_target'):
+                light._last_power_target = None
+            if hasattr(light, '_last_power_result'):
+                light._last_power_result = None
+        except Exception as e:
+            print(f"Error clearing light cache: {e}")
     
     def _initialize_log_file(self):
         """Create log file with headers if it doesn't exist."""
