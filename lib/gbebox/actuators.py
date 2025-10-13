@@ -40,10 +40,10 @@ class LightController:
         
         # Color channel limits (hardware-specific maximums)
         self._limits = {
-            'red': 160,
-            'green': 71,
-            'blue': 75,
-            'white': 117
+            'red': 240,
+            'green': 82,
+            'blue': 99,
+            'white': 196
         }
         
         # Power-based control state tracking
@@ -170,21 +170,29 @@ class LightController:
             if initial_power is None:
                 # Fall back to standard PWM control if no power sensor
                 self.rgbw(r, g, b, w)
-                return {
+                result = {
                     'success': False,
                     'error': 'Power sensor not available, using PWM-only control',
                     'final_rgbw': (r, g, b, w),
                     'actual_power': None
                 }
+                # Cache this failure to prevent repeated attempts with same target
+                self._last_power_target = target_watts
+                self._last_power_result = result
+                return result
 
         except Exception as e:
             self.rgbw(r, g, b, w)
-            return {
+            result = {
                 'success': False,
                 'error': f'Sensor error: {e}',
                 'final_rgbw': (r, g, b, w),
                 'actual_power': None
             }
+            # Cache this failure to prevent repeated attempts with same target
+            self._last_power_target = target_watts
+            self._last_power_result = result
+            return result
         
         # Start iterative adjustment
         current_r, current_g, current_b, current_w = r, g, b, w
@@ -210,12 +218,16 @@ class LightController:
                     await asyncio.sleep(0.5)
             
             if actual_power is None or actual_power <= 0:
-                return {
+                result = {
                     'success': False,
                     'error': f'Unable to get valid power reading after multiple attempts on iteration {iteration + 1}',
                     'final_rgbw': (current_r, current_g, current_b, current_w),
                     'actual_power': actual_power
                 }
+                # Cache this failure to prevent repeated attempts with same target
+                self._last_power_target = target_watts
+                self._last_power_result = result
+                return result
             
             # Check if we're within tolerance
             power_diff = abs(actual_power - target_watts)
@@ -246,7 +258,7 @@ class LightController:
                 # Check if we've hit hardware limits and can't scale further
                 if (new_r == current_r and new_g == current_g and
                     new_b == current_b and new_w == current_w):
-                    return {
+                    result = {
                         'success': False,
                         'error': f'Hardware limits reached, cannot achieve {target_watts}W',
                         'iterations': iteration + 1,
@@ -255,6 +267,10 @@ class LightController:
                         'target_power': target_watts,
                         'max_possible_power': actual_power
                     }
+                    # Cache this failure to prevent repeated attempts with same target
+                    self._last_power_target = target_watts
+                    self._last_power_result = result
+                    return result
                 
                 current_r, current_g, current_b, current_w = new_r, new_g, new_b, new_w
                 
@@ -263,7 +279,7 @@ class LightController:
                 await asyncio.sleep(2.5)  # Wait for stabilization
         
         # Maximum iterations reached
-        return {
+        result = {
             'success': False,
             'error': f'Max iterations ({max_iterations}) reached without convergence',
             'iterations': max_iterations,
@@ -272,6 +288,10 @@ class LightController:
             'target_power': target_watts,
             'power_diff': abs(actual_power - target_watts)
         }
+        # Cache this failure to prevent repeated attempts with same target
+        self._last_power_target = target_watts
+        self._last_power_result = result
+        return result
 
 
 class FanController:
