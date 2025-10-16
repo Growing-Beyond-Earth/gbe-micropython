@@ -140,9 +140,10 @@ This software is designed for **middle and high school students** learning:
 ## Configuration
 
 ### SD Card Files:
-- **`wifi.json`** - Network credentials and settings
-- **`timezone.json`** - Local timezone configuration  
+- **`wifi_settings.json`** - Network credentials and settings
+- **`timezone.json`** - Local timezone configuration
 - **`program.json`** - Custom program parameters
+- **`set_clock.json`** - Manual time setting (optional, for systems without WiFi or NTP access)
 
 ### Version Management:
 The software version is stored in `version.txt` for easy updates.
