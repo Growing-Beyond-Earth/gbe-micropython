@@ -1,3 +1,65 @@
+# Release Notes - Version 2026-06-02
+
+## Reliability Improvements
+
+### I2C Bus Recovery on Startup
+`boot.py` now attempts to recover both I2C buses *before* `main.py` constructs any `I2C()` objects. If a bus was left stuck by a previous run (SDA held low by a mid-transfer slave), the recovery routine pulses SCL and issues a STOP to free it, so sensor initialization isn't wedged on boot.
+
+- Succeeds only when both SCL and SDA read high afterward; reports which bus is stuck otherwise.
+
+**Files affected**:
+- `boot.py` - Added `i2c_bus_recover()` and run it on both buses during early boot
+
+### Sensor Driver Robustness
+- **MPL3115A2**: Initialization no longer raises if the first sample isn't immediately ready. `_read_status()` now polls with a timeout (~1.2 s on init) and tolerates transient I2C errors instead of failing, so a slow-to-warm pressure sensor doesn't abort startup.
+- **SCD4x**: `_read_reply()` reads exactly the requested number of bytes via a `memoryview` slice before the CRC check, avoiding over-reads.
+
+**Files affected**:
+- `lib/drivers/mpl3115a2.py`, `lib/drivers/scd4x.py`
+
+### Sensor Hot-Plug Detection
+I2C1 scanning is now passive — it uses `I2C.scan()` confirmed across multiple consecutive passes rather than writing to every address. This eliminates false add/remove events caused by intrusive probing. The sensor-change monitor interval was also relaxed from 60 s to 300 s.
+
+**Files affected**:
+- `lib/gbebox/sensors.py`
+
+## Bug Fixes
+
+### MAC Address Displayed as Zeros
+The MAC address was read at import time, before the Pico W's CYW43 radio is powered on, so the startup banner printed `00:00:00:00:00:00`. It is now refreshed from the live WLAN interface in `display_system_info()` after `wifi.connect()` has activated the radio.
+
+**Files affected**:
+- `lib/gbebox/hardware.py`
+
+## Improvements
+
+### Startup Banner Cleanup
+- WiFi connection status moved onto its own line directly below `Hardware ID`, aligned with the rest of the system info block.
+- Removed the redundant IP address from the WiFi status line (it is already shown on the `IP Address` line).
+
+**Files affected**:
+- `main.py`, `lib/gbebox/hardware.py`, `lib/gbebox/networking.py`
+
+## Files Changed
+
+- `boot.py` - I2C bus recovery before I2C objects are created
+- `lib/drivers/mpl3115a2.py` - Non-fatal status polling with timeout
+- `lib/drivers/scd4x.py` - Exact-length reply read via memoryview
+- `lib/gbebox/sensors.py` - Passive I2C1 scan with confirmation, longer monitor interval
+- `lib/gbebox/hardware.py` - MAC refresh after radio is up, WiFi line in system info
+- `lib/gbebox/networking.py` - Connect message no longer includes the IP
+- `main.py` - WiFi status passed to and printed by the system info block
+- `version.txt` - Bumped to 2026-06-02
+
+### No Breaking Changes
+All changes are backward compatible. Existing programs and configurations continue to work without modification.
+
+## Known Issues
+
+None at this time.
+
+---
+
 # Release Notes - Version 2025-10-13
 
 ## Critical Fixes
