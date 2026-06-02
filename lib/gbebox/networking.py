@@ -66,7 +66,7 @@ class WiFiManager:
                 ip_config = self._wlan.ifconfig()
                 if ip_config[0] == '0.0.0.0':
                     return f"Connected to '{network_name}' but no IP address assigned"
-                return f"Connected to '{network_name}' ({ip_config[0]})"
+                return f"Connected to '{network_name}'"
             else:
                 return f"Connection timeout: Unable to connect to '{network_name}' within {timeout} seconds"
         

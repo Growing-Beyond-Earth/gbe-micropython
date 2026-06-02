@@ -89,11 +89,11 @@ async def main():
         bootloader() 
 
     
-    # Connect to Wi-Fi
-    gbebox.wifi.connect()
+    # Connect to Wi-Fi (status is printed by display_system_info below)
+    wifi_status = gbebox.wifi.connect()
 
     # Print hardware info
-    gbebox.system.display_system_info()
+    gbebox.system.display_system_info(wifi_status)
    
 
     # Create an instance of the Run class with a custom logging interval (e.g., 600 seconds)

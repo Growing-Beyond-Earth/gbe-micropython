@@ -50,8 +50,13 @@ class BoardConfig:
     
     def _get_mac_address(self):
         """Get MAC address."""
+        # NOTE: this runs at import time, before wifi.connect() powers on the
+        # CYW43 radio, so it may return all zeros. Do NOT activate the radio
+        # here just to read the MAC -- doing so interferes with the later
+        # connect(). The MAC is refreshed in display_system_info() once the
+        # radio is up.
         try:
-            return ubinascii.hexlify(network.WLAN().config("mac"), ":").decode()
+            return ubinascii.hexlify(network.WLAN(network.STA_IF).config("mac"), ":").decode()
         except Exception as e:
             print(f"Error reading MAC address: {e}")
             return None
@@ -200,7 +205,7 @@ class SystemUtils:
     """System-level utility functions for runtime detection and diagnostics."""
     
     @staticmethod
-    def display_system_info():
+    def display_system_info(wifi_status=None):
         """Display system information including hardware ID, network info, and available sensors."""
         # Import at function level to avoid circular imports
         from .networking import wlan  
@@ -224,6 +229,21 @@ class SystemUtils:
             pass
             
         print("Hardware ID:    " + board["id"])
+
+        if wifi_status:
+            print("WiFi:           " + wifi_status)
+
+        # Refresh the MAC from the now-active interface. At import time (when
+        # board["mac"] was first read) the CYW43 radio may not have been
+        # powered on yet, so it can report all zeros. By the time this runs
+        # wifi.connect() has activated the radio, so the MAC is valid.
+        try:
+            live_mac = ubinascii.hexlify(wlan.config("mac"), ":").decode()
+            if live_mac and live_mac != "00:00:00:00:00:00":
+                board["mac"] = live_mac
+        except Exception:
+            pass
+
         if board["mac"]:
             print("MAC address:    " + board["mac"])
             
