@@ -229,8 +229,9 @@ class SCD4X:
         time.sleep(cmd_delay)
 
     def _read_reply(self, buff, num):
-        self.i2c.readfrom_into(self.address, buff, num)
-        self._check_buffer_crc(buff[:num])
+        mv = memoryview(buff)[:num]
+        self.i2c.readfrom_into(self.address, mv)  # reads exactly `num` bytes
+        self._check_buffer_crc(mv)
 
     @staticmethod
     def _crc8(buffer: bytearray) -> int:
